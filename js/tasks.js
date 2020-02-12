@@ -1,6 +1,6 @@
 window.ToDoList = {
 
-    API_BASE_URL: "http://localhost:8081/tasks",
+    API_BASE_URL: "http://localhost:8082/tasks",
 
     getTasks: function () {
         $.ajax({
@@ -25,15 +25,85 @@ window.ToDoList = {
         </tr>`
     },
 
-    displayTasks: function(tasks) {
+    displayTasks: function (tasks) {
         var tableBody = '';
-        
-        tasks.forEach(element => tableBody += ToDoList.getTaskRow(task));
-        $("#tasks-table tbody").html(tableBody)
-    }
 
-    
+        tasks.forEach(task => tableBody += ToDoList.getTaskRow(task));
+        $("#tasks-table tbody").html(tableBody)
+    },
+
+    updateTask: function(id, done) {
+        let reqBody = {
+            done: done,
+        }
+
+        $.ajax({
+            url: ToDoList.API_BASE_URL + "?id=" + id,
+            method: "PUT",
+            contentType: "application/json",
+            data: JSON.stringify(reqBody)
+        }).done(()=>{
+            ToDoList.getTasks();
+        })
+    },
+
+    createTask: function () {
+        //
+        let descriptionValue = $("#description-field").val();
+        let deadlineValue = $("#deadline-field").val();
+
+        let reqBody = {
+            description: descriptionValue,
+            deadline: deadlineValue
+        }
+        $.ajax({
+            url: ToDoList.API_BASE_URL,
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify(reqBody)
+        }).done(()=> {
+            ToDoList.getTasks()
+        })
+    },
+
+    deleteTasks: (id) => {
+        $.ajax({
+            url: ToDoList.API_BASE_URL + "?id=" + id,
+            method: "DELETE"
+        }).done( () => {
+            ToDoList.getTasks();
+        })
+    },
+
+    bindEvents: function () {
+        //binding submit event to createTask method
+        $("#new-task-from").submit((e)=> {
+            e.preventDefault();
+            ToDoList.createTask();
+        })
+
+        $("#tasks-table").delegate(".mark-done", "change", (e) => {
+            e.preventDefault();
+
+            //reading data attr
+            let taskID = $(this).data("id");
+            let done = $(this).is(":checked")
+
+            ToDoList.updateTask(taskID, done)
+        })
+
+        $("#tasks-table").delegate(".delete-task", "click", (event) => {
+                event.preventDefault();
+
+                //reading data attr
+                let taskID = $(this).data("id");
+
+                ToDoList.deleteTasks(taskID)
+            })
+        }
+
 
 };
 
 ToDoList.getTasks();
+ToDoList.bindEvents();
